@@ -99,7 +99,7 @@ class WebSocketClient:
             if b != sec_websocket_accept.encode():
                 raise SecWebSocketKeyError('sec_websocket_key verify failed')
         else:
-            raise SwitchingProtocolError(f"switching protocol error,status_code {status_code},text: {data}")
+            raise SwitchingProtocolError(f"host={self.addres[0]},path={self.path},switching protocol error,status_code {status_code},text: {data}")
 
     async def on_open(self):
 
@@ -164,61 +164,64 @@ class WebSocketClient:
         await self.sock.sendall(s)
 
     async def recv(self, size=1024):
+
         while 1:
-            data = await self.sock.recv(2 ** 14)
 
-            if data is None:
-                raise WebSocketClosedError('connect Closed')
+            if not self.sock.isclosed:
+                data = await self.sock.recv(2 ** 14)
+                if data is None :
+                    raise WebSocketClosedError('webscoket Closed')
 
-            data += self.buffer
-            self.buffer = b''
-            frame_head = data[0]
-            FIN = frame_head >> 7
-            opcode = frame_head & 0b1111
-            payload_len = data[1] & 0b1111111
+                data += self.buffer
+                self.buffer = b''
+                frame_head = data[0]
+                FIN = frame_head >> 7
+                opcode = frame_head & 0b1111
+                payload_len = data[1] & 0b1111111
 
-            if payload_len < 126:
-                n = 2
-                msg_len = payload_len
-                msg = data[n:n+msg_len]
-                self.buffer = data[n+msg_len:]
-            elif payload_len == 126:
-                n = 4
-                msg_len = struct.unpack('!H', data[2:n])[0]
-                msg = data[n:n+msg_len]
-                self.buffer = data[n + msg_len:]
+                if payload_len < 126:
+                    n = 2
+                    msg_len = payload_len
+                    msg = data[n:n+msg_len]
+                    self.buffer = data[n+msg_len:]
+                elif payload_len == 126:
+                    n = 4
+                    msg_len = struct.unpack('!H', data[2:n])[0]
+                    msg = data[n:n+msg_len]
+                    self.buffer = data[n + msg_len:]
+                else:
+                    n=10
+                    msg_len = struct.unpack('!Q', data[2:n])[0]
+                    msg = data[n:n + msg_len]
+                    self.buffer = data[n + msg_len:]
+
+
+                while len(msg) < msg_len:
+                    d = self.sock.recv(msg_len)
+                    msg += d
+
+                if opcode == 0x00:
+                    self.reader_buffer += msg
+                if opcode == 0x01:
+                    self.reader_buffer += msg
+                elif opcode == 0x02:
+                    self.reader_buffer += msg
+                elif opcode == 0x08:
+                    self.open = False
+                    raise  WebSocketClosedError(' closed')
+                elif opcode == 0xA:
+                    #pong
+                    pass
+
+                if FIN == 1:
+                    reader_buffer = self.reader_buffer
+                    self.reader_buffer = b''
+                    return reader_buffer if opcode == 0x02 else reader_buffer.decode()
+
+                else:
+                    pass
             else:
-                n=10
-                msg_len = struct.unpack('!Q', data[2:n])[0]
-                msg = data[n:n + msg_len]
-                self.buffer = data[n + msg_len:]
-
-
-            while len(msg) < msg_len:
-                d = self.sock.recv(msg_len)
-                msg += d
-
-            if opcode == 0x00:
-                self.reader_buffer += msg
-            if opcode == 0x01:
-                self.reader_buffer += msg
-            elif opcode == 0x02:
-                self.reader_buffer += msg
-            elif opcode == 0x08:
-                self.open = False
-                raise  WebSocketClosedError(' closed')
-            elif opcode == 0xA:
-                #pong
-                pass
-
-            if FIN == 1:
-                reader_buffer = self.reader_buffer
-                self.reader_buffer = b''
-                return reader_buffer if opcode == 0x02 else reader_buffer.decode()
-
-            else:
-                pass
-
+                raise WebSocketClosedError('closed')
     async def ping(self):
         while 1:
             await self.send('\x00',binary=True, opc=0x09)

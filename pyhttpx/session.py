@@ -16,12 +16,12 @@ from urllib.parse import urlencode
 
 from pyhttpx.compat import *
 from pyhttpx.models import Request
-from pyhttpx.utils import default_headers
-from pyhttpx.layers.tls.pyssl import TLSSocket
+from pyhttpx.utils import default_headers,log,Conf
+
 
 from pyhttpx.models import Response
 from pyhttpx.exception import TooManyRedirects
-log = logging.getLogger(__name__)
+
 
 class CookieJar(object):
     __slots__ = ('name', 'value', 'expires', 'max_age', 'path', 'domain')
@@ -67,7 +67,7 @@ class HTTPSConnectionPool:
         conn.connect((self.req.host,self.req.port))
         return conn
 
-    def _get_conn(self, ja3=None):
+    def _get_conn(self):
         conn = None
         try:
             conn = self.poolconnections.get(block=False)
@@ -122,7 +122,7 @@ class HttpSession(object):
 
 
     def request(self, method, url,update_cookies=True,timeout=None,proxies=None,
-                params=None, data=None, headers=None, cookies=None,json=None,verify=False):
+                params=None, data=None, headers=None, cookies=None,json=None,allow_redirects=True,verify=None):
         req = Request(
             method=method.upper(),
             url=url,
@@ -133,6 +133,7 @@ class HttpSession(object):
             params=params or {},
             timeout=timeout,
             proxies=proxies,
+            allow_redirects=allow_redirects,
 
         )
 
@@ -150,13 +151,14 @@ class HttpSession(object):
         self.req = req
         msg = self.prep_request(req, send_kw)
         resp = self.send(req, msg, update_cookies)
-        if resp.status_code == 302:
-            for i in range(20):
+
+        if resp.status_code == 302 and req.allow_redirects:
+            for i in range(Conf.max_allow_redirects):
                 resp = self.send(req, msg, update_cookies)
                 if resp.status_code != 302:
                     break
-                if i > 10:
-                    raise TooManyRedirects('too many redirects')
+            else:
+                raise TooManyRedirects('too many redirects')
 
         return resp
 

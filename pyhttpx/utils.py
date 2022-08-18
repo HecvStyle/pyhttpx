@@ -1,4 +1,4 @@
-
+import logging
 
 def default_headers():
     h = {
@@ -14,9 +14,11 @@ def default_headers():
 
     return h
 
+log = logging.getLogger(__name__)
 
 class Conf:
     debug = True
+    max_allow_redirects = 20
 
 def vprint(*args):
     if Conf.debug:

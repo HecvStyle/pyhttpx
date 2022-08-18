@@ -14,7 +14,9 @@ def encodeURI(url):
 class Request(object):
     def __init__(self,
                  method=None, url=None, headers=None, data=None,timeout=None,
-                 params=None, auth=None, cookies=None,json=None,proxies=None):
+                 params=None, auth=None, cookies=None,json=None,proxies=None,
+                 allow_redirects=None,
+                 ):
         # Default empty dicts for dict params.
         data = [] if data is None else data
         headers = {} if headers is None else headers
@@ -31,6 +33,7 @@ class Request(object):
         self.parse_url = urlparse(url)
         self.timeout = timeout
         self.proxies = proxies
+        self.allow_redirects = allow_redirects
         self.host = self.parse_url.netloc
         self.port = 443
 

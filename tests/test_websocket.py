@@ -12,27 +12,39 @@ class WSS:
         self.url = url
         self.headers = headers
         self.loop = loop
-        self.ja3 = '771,49195-49199-52393-52392-49196-49200-49162-49161-49171-49172-156-157-47-53-55,0-23-65281-10-11-35-16-5-13-28-222,29-23-24-25,0'
-        self.exts_payload = {222: '\x00'}
+        #chrome103-ja3
+        self.ja3 = '771,19018-4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-18-51-45-43-27-17513,27242-29-23-24,0'
+        self.exts_payload = {
+            51: bytes.fromhex('00297a7a000100001d0020b63f4893bbdd23302f0c66799d94865ea63555b7d891a70aa65fd0aa0280132b'),
+            45: bytes.fromhex('0101'),
+            43: bytes.fromhex('06fafa03040303'),
+            27: bytes.fromhex('020002')
+        }
 
     async def connect(self):
         self.sock = await WebSocketClient(url=self.url, headers=self.headers, loop=self.loop,
-                                          ja3=self.ja3,exts_payload=self.exts_payload
+                                            ja3=self.ja3,exts_payload=None
                                           ).connect()
 
     async def send(self):
+
         while 1:
-            await self.sock.send('\x00',binary=True)
+            d = '1'
+            print('send',d)
+            await self.sock.send(d,binary=True)
             await asyncio.sleep(3)
 
     async def recv(self):
         while 1:
             r = await self.sock.recv()
-            print(r)
+            print('recv',r)
+            await asyncio.sleep(2)
 
 def main():
     loop = asyncio.get_event_loop()
-    url = 'wss://127.0.0.1:6324'
+    url = 'wss://127.0.0.1:6324/chat'
+    url = 'wss://www.python-spider.com/api/challenge62'
+    print(f'connect: {url}')
     headers = {
         'Accept-Encoding': 'gzip, deflate, br',
         'Accept-Language': 'zh,zh-CN;q=0.9,en;q=0.8',

@@ -145,6 +145,40 @@ class ExtRecordSizeLimit(_BaseExtension):
         _type,
         payload,
     ]
+
+#tls1.3
+class ExtKeyShare(_BaseExtension):
+    _type = 0x33
+    payload = bytes.fromhex('0029aaaa000100001d002049266d1d91aaa329581793362977e7cf0a17a70ed23bcbfb5cf64e31697af80f')
+    fields_desc = [
+        _type,
+        payload,
+    ]
+
+class ExtPskKeyExchange_modes(_BaseExtension):
+    _type = 0x2d
+    payload = '\x01\x01'
+    fields_desc = [
+        _type,
+        payload,
+    ]
+
+class ExtSupportdVersions(_BaseExtension):
+    _type = 0x2b
+    payload = '\x04\x04\x03\x03\x03'
+    fields_desc = [
+        _type,
+        payload,
+    ]
+
+class ExtCompressCertificate(_BaseExtension):
+    _type = 0x1b
+    payload = '\x02\x00\x02'
+    fields_desc = [
+        _type,
+        payload,
+    ]
+
 class __ExtPadding(_BaseExtension):
     _type = 0x15
     payload = bytes(random.randint(0,100))
@@ -156,7 +190,11 @@ class __ExtPadding(_BaseExtension):
 
 def make_randext(host, ext_type, payload=None,context=None):
     if payload is None:
-        payload = ''
+        #payload = ''
+        if ext_type in _tls_ext_cls.keys():
+            payload = _tls_ext_cls[ext_type].payload
+        else:
+            payload = ''
     fields_desc = [
         ext_type,
         payload,

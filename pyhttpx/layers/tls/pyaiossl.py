@@ -28,7 +28,8 @@ from pyhttpx.exception import (
     TLSDecryptErrorExpetion,
     ConnectionTimeout,
     ConnectionClosed,
-    ReadTimeout)
+    ReadTimeout,
+)
 
 from pyhttpx.layers.tls.socks import SocketProxy
 from pyhttpx.utils import vprint
@@ -62,6 +63,7 @@ class TLSSocket:
         self._timeout = self._timeout or 0
 
         await self._tls_do_handshake()
+        self.isclosed = False
 
     async def _tls_do_handshake(self):
 
@@ -155,9 +157,9 @@ class TLSSocket:
         self.cache = b''
         self.plaintext_reader = b''
 
-    async def recv(self, size=1024):
+    async def recv(self, size=4096):
 
-        s = await self.reader.read(6324)
+        s = await self.reader.read(size)
         if not s:
             return None
 
@@ -165,6 +167,7 @@ class TLSSocket:
         self.cache = b''
 
         # 会存在读取长度不足而返回空字符,而不是收到fin
+        exc_alert = False
         while s and len(s) >= 5:
 
             handshake_type = struct.unpack('!B', s[:1])[0]
@@ -182,9 +185,13 @@ class TLSSocket:
 
             elif handshake_type == 0x15:
                 self.isclosed = True
+                exc_alert = True
+                raise ConnectionClosed('tcp encrypted alert closed')
 
         b = self.plaintext_reader
         self.plaintext_reader = b''
+        if exc_alert:
+            b = None
         return b
 
 
