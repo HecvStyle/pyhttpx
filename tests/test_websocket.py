@@ -5,7 +5,7 @@ pyhttpx.weboskcts
 """
 
 import asyncio
-from pyhttpx.websocket import WebSocketClient
+from pyhttpx import WebSocketClient
 
 class WSS:
     def __init__(self,url=None, headers=None, loop=None):

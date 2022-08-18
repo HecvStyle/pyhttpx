@@ -165,7 +165,7 @@ class ExtPskKeyExchange_modes(_BaseExtension):
 
 class ExtSupportdVersions(_BaseExtension):
     _type = 0x2b
-    payload = '\x04\x04\x03\x03\x03'
+    payload = '\x02\x03\x03'
     fields_desc = [
         _type,
         payload,
@@ -189,8 +189,9 @@ class __ExtPadding(_BaseExtension):
 
 
 def make_randext(host, ext_type, payload=None,context=None):
+
     if payload is None:
-        #payload = ''
+        #强制使用内置扩展数据
         if ext_type in _tls_ext_cls.keys():
             payload = _tls_ext_cls[ext_type].payload
         else:
