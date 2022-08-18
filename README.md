@@ -91,6 +91,8 @@ exts_payload: 需要填充的扩展数据,不包括数据长度
 
 # 支持ssl上下文
 
+r is None,表示收到fin,服务器断开连接
+
 ```
 >>>from pyhttpx.layers.tls.pyssl import SSLContext,PROTOCOL_TLSv1_2
 >>>import socket
@@ -123,7 +125,6 @@ exts_payload: 需要填充的扩展数据,不包括数据长度
 - RSA_WITH_AES_256_CBC
 - ECDHE_WITH_AES_128_CBC
 - ECDHE_WITH_AES_256_CBC
-
 
 
 ### 附录tls相关资料

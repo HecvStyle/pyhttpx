@@ -28,12 +28,12 @@ DEFAULT_HEADERS = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
         }
 class WebSocketClient:
-    def __init__(self, url=None, headers=None, loop=None, ja3=None, exts_payload=None):
+    def __init__(self, url=None, headers=None, loop=None, ja3=None, exts_payload=None,ping=None):
         self._urlparse = urlparse(url)
         self.headers = headers or DEFAULT_HEADERS
         self.ja3 = ja3
         self.exts_payload = exts_payload
-
+        self.ping = ping
         if ':' in self._urlparse.netloc:
             host = self._urlparse.netloc.split(':')[0]
             port = self._urlparse.netloc.split(':')[1]
@@ -55,6 +55,7 @@ class WebSocketClient:
         self.buffer = b''
 
 
+
     async def __aenter__(self):
         await self.connect()
         return self
@@ -74,37 +75,41 @@ class WebSocketClient:
         await self.sock.connect(self.addres)
         await self.on_open()
         self.open = True
-        self.loop.create_task(self.ping())
+        if self.ping:
+            self.loop.create_task(self.ping())
         return self
 
     def check_proto(self, data: str):
         data = data.strip()
         proto, status_code, _, _ = data.split('\r\n',1)[0].split(' ')
         head = {}
-        for i in data.split('\r\n')[1:]:
-            k,v = i.split(':', 1)
-            k,v = k.strip(), v.strip()
-            head[k] = v
+
         if status_code == '101':
+            for i in data.split('\r\n')[1:]:
+                k, v = i.split(':', 1)
+                k, v = k.strip(), v.strip()
+                head[k.lower()] = v
+
             # verify
             # sec = b64(sha258EAFA5-E914-47DA-95CA-C5AB0DC85B11)
             sec_websocket_key = self.sec_websocket_key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
-            sec_websocket_accept = head['Sec-Websocket-Accept']
+            sec_websocket_accept = head['sec-websocket-accept']
 
             b = base64.b64encode(hashlib.sha1(sec_websocket_key.encode('latin1')).digest())
             if b != sec_websocket_accept.encode():
                 raise SecWebSocketKeyError('sec_websocket_key verify failed')
         else:
-            raise SwitchingProtocolError(f'switching protocol error, status_code {status_code}')
+            raise SwitchingProtocolError(f"switching protocol error,status_code {status_code},text: {data}")
+
     async def on_open(self):
 
         #self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         #self.sock.connect(self.addres)
+
         self.sec_websocket_key = base64.b64encode(os.urandom(20)).decode()
-        #self.sec_websocket_key = '5d2W0zCfJZ2Mapyun85U3w=='
         self.headers['Sec-Websocket-Key'] = self.sec_websocket_key
 
-        request_header = ['GET /chat HTTP/1.1']
+        request_header = [f'GET {self.path} HTTP/1.1']
         for k,v in self.headers.items():
             request_header.append(f'{k}: {v}')
 
@@ -113,7 +118,7 @@ class WebSocketClient:
 
         await self.sock.sendall(request_header.encode())
         data = await self.sock.recv(4096)
-        self.check_proto(data.decode())
+        self.check_proto(data.decode('latin1'))
         self.reader_buffer = b''
         return True
 
@@ -161,6 +166,10 @@ class WebSocketClient:
     async def recv(self, size=1024):
         while 1:
             data = await self.sock.recv(2 ** 14)
+
+            if data is None:
+                raise WebSocketClosedError('connect Closed')
+
             data += self.buffer
             self.buffer = b''
             frame_head = data[0]
