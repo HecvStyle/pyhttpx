@@ -184,8 +184,6 @@ class WebSocketClient:
                 msg = data[n:n + msg_len]
                 self.buffer = data[n + msg_len:]
 
-            if len(msg) < msg_len:
-                print(payload_len)
 
             while len(msg) < msg_len:
                 d = self.sock.recv(msg_len)

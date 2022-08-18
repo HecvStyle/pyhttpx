@@ -229,11 +229,9 @@ class SSLContext:
 
 
 
-async def get():
+async def main():
     host = '127.0.0.1'
-    host = 'httpbin.org'
-    host = 'www.baidu.com'
-    host = 'premws-pt3.365lpodds.com'
+
     port = 443
     addres = (host, port)
     context = SSLContext(PROTOCOL_TLSv1_2)
@@ -244,13 +242,9 @@ async def get():
     m = 'GET / HTTP/1.1\r\n\r\n'
     await sock.sendall(m.encode())
     data = await sock.recv(8888)
-
     print(data)
 
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
 
-    loop.run_until_complete(get())
 
 
 
