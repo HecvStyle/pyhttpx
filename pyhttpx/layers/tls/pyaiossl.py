@@ -153,6 +153,7 @@ class TLSSocket:
     async def sendall(self, plaintext):
         ciphertext = self.tls_cxt.encrypt(plaintext, b'\x17')
         self.write_buff = b'\x17' + b'\x03\x03' + struct.pack('!H', len(ciphertext)) + ciphertext
+
         self.writer.write(self.write_buff)
         self.cache = b''
         self.plaintext_reader = b''

@@ -1,6 +1,6 @@
 """
 docs
-pyhttpx.weboskcts
+pyhttpx.websocket
 
 """
 
@@ -23,22 +23,23 @@ class WSS:
 
     async def connect(self):
         self.sock = await WebSocketClient(url=self.url, headers=self.headers, loop=self.loop,
-                                            ja3=self.ja3,exts_payload=None
+                                            ja3=self.ja3,exts_payload=None, ping=True
                                           ).connect()
 
     async def send(self):
 
         while 1:
-            d = '1'
-            print('send',d)
-            await self.sock.send(d,binary=True)
-            await asyncio.sleep(3)
+            if self.sock.open:
+                d = '1'
+                print('send',d)
+                await self.sock.send(d,binary=True)
+                await asyncio.sleep(3)
 
     async def recv(self):
         while 1:
             r = await self.sock.recv()
             print('recv',r)
-            await asyncio.sleep(2)
+
 
 def main():
     loop = asyncio.get_event_loop()
@@ -49,7 +50,6 @@ def main():
         'Accept-Encoding': 'gzip, deflate, br',
         'Accept-Language': 'zh,zh-CN;q=0.9,en;q=0.8',
         'Cache-Control': 'no-cache',
-        'Host': '127.0.0.1',
         'Pragma': 'no-cache',
         'Upgrade': 'websocket',
         'Connection': 'Upgrade',
