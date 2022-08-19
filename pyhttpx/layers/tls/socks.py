@@ -12,9 +12,9 @@ DEFAULT_PORTS = {HTTP: 8080}
 
 class SocketProxy(socket.socket):
     HTTP = 1
-    def __init__(self,sock=None):
+    def __init__(self):
         super().__init__()
-        self.sock = sock
+
     def set_proxy(self, proxy_type, proxy_addr,proxy_port, username=None, password=None):
 
         self.proxy = (proxy_type, proxy_addr, int(proxy_port),username,
@@ -40,20 +40,16 @@ class SocketProxy(socket.socket):
                                 + b64encode(username.encode('latin1') + b":" + password.encode('latin1')))
 
         http_headers.append(b"\r\n")
-        if self.sock:
-            sock = self.sock
-        else:
-            sock = super(SocketProxy, self)
         try:
 
-            sock.connect((proxy_addr, proxy_port))
+            super(SocketProxy, self).connect((proxy_addr, proxy_port))
 
         except (socket.timeout, ConnectionRefusedError):
             raise ProxyError(
                 "Proxy server connection time out")
 
-        sock.sendall(b"\r\n".join(http_headers))
-        status_line = sock.recv(1024).decode()
+        self.sendall(b"\r\n".join(http_headers))
+        status_line = self.recv(1024).decode()
         proto, status_code, status_msg = status_line.split(" ", 2)
 
         if not proto.startswith("HTTP/"):

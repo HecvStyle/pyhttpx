@@ -236,10 +236,8 @@ class SSLContext:
 
 
 
-
 async def main():
     host = '127.0.0.1'
-
     port = 443
     addres = (host, port)
     context = SSLContext(PROTOCOL_TLSv1_2)
@@ -249,8 +247,9 @@ async def main():
 
     m = 'GET / HTTP/1.1\r\n\r\n'
     await sock.sendall(m.encode())
-    data = await sock.recv(8888)
+    data = await sock.recv(1024)
     print(data)
+
 
 
 

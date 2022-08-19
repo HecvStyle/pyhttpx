@@ -1,8 +1,6 @@
-from pyhttpx.layers.tls.pyaiossl import SSLContext,PROTOCOL_TLSv1_2
+
 import asyncio
 import struct
-import socket
-import time
 import hashlib
 import base64
 import os
@@ -10,6 +8,7 @@ import os
 from urllib.parse import urlparse
 
 
+from pyhttpx.layers.tls.pyaiossl import SSLContext,PROTOCOL_TLSv1_2
 from pyhttpx.exception import (
     SwitchingProtocolError,
     SecWebSocketKeyError,
@@ -104,9 +103,6 @@ class WebSocketClient:
 
     async def on_open(self):
 
-        #self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        #self.sock.connect(self.addres)
-
         self.sec_websocket_key = base64.b64encode(os.urandom(20)).decode()
         self.headers['Sec-Websocket-Key'] = self.sec_websocket_key
 
@@ -123,9 +119,9 @@ class WebSocketClient:
         self.check_proto(self.head_data)
 
         self.cache_buffer = b''
-
         self.reader_buffer = b''
         self.cache_buffer += self.body_data
+
         return True
 
     async def send(self, data: str, binary: bool=True, opc: int=None):

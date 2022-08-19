@@ -67,8 +67,8 @@ class Request(object):
 
 
 class Response(object):
-    def __init__(self, tls_ctx=None):
-        self.tls_ctx = tls_ctx
+    def __init__(self):
+
         self.plaintext_buffer = b''
         self.headers = {}
         self.body = b''

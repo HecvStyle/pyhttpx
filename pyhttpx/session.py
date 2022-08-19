@@ -9,11 +9,10 @@ from queue import LifoQueue
 import queue
 from threading import RLock
 import threading
-import logging
-
 
 from urllib.parse import urlencode
 
+from pyhttpx.layers.tls import pyssl
 from pyhttpx.compat import *
 from pyhttpx.models import Request
 from pyhttpx.utils import default_headers,log,Conf
@@ -50,13 +49,14 @@ class HTTPSConnectionPool:
         self.host = kwargs['host']
         self.port = kwargs['port']
         self.req = kwargs.get('request')
+
         self.ja3 = kwargs.get('ja3')
         self.exts_payload = kwargs.get('exts_payload')
         self.poolconnections = LifoQueue(maxsize=self.maxsize)
         self.lock = RLock()
 
     def _new_conn(self):
-        from pyhttpx.layers.tls import pyssl
+
         context = pyssl.SSLContext(pyssl.PROTOCOL_TLSv1_2)
         context.set_ja3(self.ja3)
         context.set_ext_payload(self.exts_payload)
@@ -64,7 +64,7 @@ class HTTPSConnectionPool:
         conn = context.wrap_socket(
             sock=None,server_hostname=None)
 
-        conn.connect((self.req.host,self.req.port))
+        conn.connect((self.req.host,self.req.port), timeout=self.req.timeout, proxies=self.req.proxies)
         return conn
 
     def _get_conn(self):
@@ -123,6 +123,8 @@ class HttpSession(object):
 
     def request(self, method, url,update_cookies=True,timeout=None,proxies=None,
                 params=None, data=None, headers=None, cookies=None,json=None,allow_redirects=True,verify=None):
+
+        #多线程,采用局部变量
         req = Request(
             method=method.upper(),
             url=url,
@@ -148,8 +150,9 @@ class HttpSession(object):
         send_kw  = {}
         if _cookies:
             send_kw['Cookie'] = '; '.join('{}={}'.format(k,v) for k,v in _cookies.items())
-        self.req = req
+
         msg = self.prep_request(req, send_kw)
+
         resp = self.send(req, msg, update_cookies)
 
         if resp.status_code == 302 and req.allow_redirects:
@@ -205,12 +208,13 @@ class HttpSession(object):
         return connpool, conn
     def send(self, req, msg, update_cookies):
         addr = (req.host, req.port)
+
         connpool, conn = self.get_conn(req, addr)
         conn.sendall(msg)
-        response = Response()
 
+        response = Response()
         while 1:
-            r = conn.recv(1024)
+            r = conn.recv(4096)
             if r is None:
                 conn.isclosed = True
                 break
