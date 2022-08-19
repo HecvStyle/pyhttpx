@@ -300,7 +300,7 @@ class SSLContext:
 
 if __name__ == '__main__':
     host = '127.0.0.1'
-    host = 'httpbin.org'
+    #host = 'httpbin.org'
     port = 443
     addres = (host,port)
 
@@ -314,6 +314,7 @@ if __name__ == '__main__':
     response = Response()
     while 1:
         r = ssock.recv(1024)
+        print(r)
         if r is None:
             break
         else:

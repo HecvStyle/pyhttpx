@@ -107,6 +107,7 @@ exts_payload: 需要填充的扩展数据,不包括数据长度
 >>>m = 'GET / HTTP/1.1\r\nHOST: %s\r\n\r\n' % addres[0]
 >>>ssock.sendall(m.encode())
 >>>r = ssock.recv(1024)
+b'HTTP/1.0 200 OK\r\n'...
 ```
 
 # websocket,支持修改ja3
@@ -142,6 +143,5 @@ exts_payload: 需要填充的扩展数据,不包括数据长度
 
 如果对你有帮助,可以请我喝杯咖啡哟
 
- ![Image](https://github.com/zero3301/pyhttpx/blob/main/image/wechat.png)
 
  ![Image_QingFlow](https://file.qingflow.com/documents/form/attach/35efbb5c-b704-4ac6-9074-8adc2f0ef9df.png)

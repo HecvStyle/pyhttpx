@@ -30,7 +30,7 @@ class WSS:
 
         while 1:
             if self.sock.open:
-                d = '1'
+                d = '666'
                 print('send',d)
                 await self.sock.send(d,binary=True)
                 await asyncio.sleep(3)

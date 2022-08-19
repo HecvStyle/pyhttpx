@@ -252,7 +252,7 @@ class WebSocketClient:
 
     async def loop_ping(self):
         while 1:
-            await self.send('\x00',binary=True, opc=0x09)
+            await self.send('',binary=True, opc=0x09)
             await asyncio.sleep(30)
 
 
