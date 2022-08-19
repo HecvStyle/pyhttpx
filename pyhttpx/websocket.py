@@ -6,7 +6,7 @@ import base64
 import os
 
 from urllib.parse import urlparse
-
+import socket
 
 from pyhttpx.layers.tls.pyaiossl import SSLContext,PROTOCOL_TLSv1_2
 from pyhttpx.exception import (
@@ -71,12 +71,14 @@ class WebSocketClient:
         context.set_ext_payload(self.exts_payload)
         self.sock = context.wrap_socket()
         await self.sock.connect(self.addres)
+        #self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        #self.sock.connect(self.addres)
         await self.on_open()
         self.open = True
 
         if self.ping:
             self.loop.create_task(self.loop_ping())
-            pass
+
         return self
 
     def check_proto(self, data):
@@ -159,6 +161,7 @@ class WebSocketClient:
             raise OverflowError('data length more than 64 byte')
 
         mask_key = os.urandom(4)
+
         s += mask_key
         for i in range(len(data)):
             n = ord(data[i]) ^ (mask_key[i % 4])
@@ -248,8 +251,9 @@ class WebSocketClient:
 
     async def loop_ping(self):
         while 1:
-            await self.send('',binary=True, opc=0x09)
-            await asyncio.sleep(30)
+            s = os.urandom(4).decode('latin1')
+            await self.send(s,binary=True, opc=0x09)
+            await asyncio.sleep(2)
 
 
 

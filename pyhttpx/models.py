@@ -15,7 +15,7 @@ class Request(object):
     def __init__(self,
                  method=None, url=None, headers=None, data=None,timeout=None,
                  params=None, auth=None, cookies=None,json=None,proxies=None,
-                 allow_redirects=None,
+                 allow_redirects=None,proxy_auth=None
                  ):
         # Default empty dicts for dict params.
         data = [] if data is None else data
@@ -33,6 +33,7 @@ class Request(object):
         self.parse_url = urlparse(url)
         self.timeout = timeout
         self.proxies = proxies
+        self.proxy_auth = proxy_auth
         self.allow_redirects = allow_redirects
         self.host = self.parse_url.netloc
         self.port = 443

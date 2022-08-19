@@ -59,11 +59,16 @@ class SocketProxy(socket.socket):
         status_code = int(status_code)
         if status_code != 200:
             error = ''
+            #Tunnel connection failed: 502 Proxy Bad Server
             if status_code in [400, 403, 405]:
                 error = "The HTTP proxy server may not be supported"
 
-            elif status_code in (407):
-                error = "Unauthorized"
+            elif status_code in (407,):
+
+                error =f'Tunnel connection failed: status_code = {status_code},Unauthorized'
+            else:
+                error = f'Tunnel connection failed: status_code = {status_code}'
+
             raise ProxyError(error)
 
 

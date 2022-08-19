@@ -85,11 +85,12 @@ class TLSSocket():
     def isclosed(self, value):
         setattr(self, '_closed', value)
 
-    def connect(self,addres=None, timeout=None, proxies=None):
+    def connect(self,addres=None, timeout=None, proxies=None, proxy_auth=None):
         self.servercontext = ServerContext()
         self.tls_cxt = TLSSessionCtx()
         self.tls_cxt.handshake_data = []
         self.host,self.port = addres[0],addres[1]
+        self.proxy_auth = proxy_auth
         if not self.sock:          
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             
@@ -97,11 +98,16 @@ class TLSSocket():
 
         self.timeout  = timeout
         self.proxies = proxies
-        
+
         if self.proxies:
             self.sock = SocketProxy()
             proxy_ip, proxy_port = self.proxies['https'].split(':')
-            self.sock.set_proxy(SocketProxy.HTTP, proxy_ip, proxy_port)
+            if self.proxy_auth:
+                username,password = proxy_auth[0], proxy_auth[1]
+            else:
+                username, password = None,None
+
+            self.sock.set_proxy(SocketProxy.HTTP, proxy_ip, proxy_port,username, password )
 
         try:
             self.sock.connect((self.host, self.port))

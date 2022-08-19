@@ -51,7 +51,8 @@ b'GET /get HTTP/1.1\r\nHost: httpbin.org ...
 ## HTTP PROXY
 ```
 >>> proxies = {'https': '127.0.0.1:7890'}
->>> r = sess.post('https://httpbin.org/get',proxies=proxies)
+>>>proxy_auth=(username, password)
+>>> r = sess.post('https://httpbin.org/get',proxies=proxies,proxy_auth=proxy_auth)
 ```
 
 ## 修改tls指纹

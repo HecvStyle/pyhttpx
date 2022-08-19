@@ -64,7 +64,7 @@ class HTTPSConnectionPool:
         conn = context.wrap_socket(
             sock=None,server_hostname=None)
 
-        conn.connect((self.req.host,self.req.port), timeout=self.req.timeout, proxies=self.req.proxies)
+        conn.connect((self.req.host,self.req.port), timeout=self.req.timeout, proxies=self.req.proxies, proxy_auth=self.req.proxy_auth)
         return conn
 
     def _get_conn(self):
@@ -121,7 +121,7 @@ class HttpSession(object):
         self.cookie_manger.set_cookie(req,c)
 
 
-    def request(self, method, url,update_cookies=True,timeout=None,proxies=None,
+    def request(self, method, url,update_cookies=True,timeout=None,proxies=None,proxy_auth=None,
                 params=None, data=None, headers=None, cookies=None,json=None,allow_redirects=True,verify=None):
 
         #多线程,采用局部变量
@@ -135,6 +135,7 @@ class HttpSession(object):
             params=params or {},
             timeout=timeout,
             proxies=proxies,
+            proxy_auth=proxy_auth,
             allow_redirects=allow_redirects,
 
         )
@@ -201,7 +202,12 @@ class HttpSession(object):
             conn = connpool._get_conn()
 
         else:
-            connpool = HTTPSConnectionPool(request=req, host=req.host, port=req.host,ja3=self.ja3, exts_payload=self.exts_payload)
+            connpool = HTTPSConnectionPool(request=req,
+                                           host=req.host,
+                                           port=req.host,
+                                           ja3=self.ja3,
+                                           exts_payload=self.exts_payload
+                                           )
             self.tlss[addr] = connpool
             conn = connpool._get_conn()
 
@@ -243,7 +249,6 @@ class HttpSession(object):
         _cookies = self.cookie_manger.get(self.active_addr)
         return _cookies
     def get(self, url, **kwargs):
-
         return self.request('GET', url, **kwargs)
 
     def post(self,url, **kwargs):
