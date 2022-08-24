@@ -84,7 +84,7 @@ exts_payload: 需要填充的扩展数据,不包括数据长度
 >>>sess = pyhttpx.HttpSession(ja3=ja3,exts_payload=exts_payload)
 >>>r = sess.get('https://tls.peet.ws/api/all')
 >>>r.text
-... "ja3": "771,47-49172-52392-53-49200-49195-157-523925,0...
+... "ja3": "771,49195-49199...
 ```
 
 # 支持ssl上下文
