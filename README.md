@@ -55,22 +55,22 @@ b'GET /get HTTP/1.1\r\nHost: httpbin.org ...
 >>> r = sess.post('https://httpbin.org/get',proxies=proxies,proxy_auth=proxy_auth)
 ```
 
-## 修改tls指纹
-
-- 修改ja3,需要下载wireshark,查看完整握手流程，如果服务器返回已实现的密码套件,可随意魔改client hello包
+## 查看tls指纹
+- https://tls.peet.ws/api/all
+- 下载wireshark,查看完整握手流程，如果服务器返回已实现的密码套件,可随意魔改client hello包
 
 
 ### 如何禁用firefox的tls1.3, 强制tls1.2
 
     地址栏输入: about:config,
-    搜索tls,将security.tls.version.max的值改为3即可,
-    如果firefox访问没问题,表示tls1.2也是可以访问的
+    搜索tls,将security.tls.version.max的值改为3即可
+
 
 ### 如何禁用firefox的http2,强制http/1.1
     
     地址栏输入: about:config,
-    搜索http2,将network.http.spdy.enabled.http2的值改为false即可,
-    如果firefox访问没问题,表示http/1.1也是可以访问的  
+    搜索http2,将network.http.spdy.enabled.http2的值改为false即可
+
 
 **HttpSession 参数说明**
 
