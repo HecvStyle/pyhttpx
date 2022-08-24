@@ -22,7 +22,6 @@ from pyhttpx.layers.tls.extensions import dump_extension
 
 from pyhttpx.layers.tls.tls_context import TLSSessionCtx
 
-from pyhttpx.models import Response
 
 from pyhttpx.exception import (
     TLSDecryptErrorExpetion,
@@ -57,6 +56,8 @@ class TLSSocket:
     async def connect(self, addres=None):
         self.servercontext = ServerContext()
         self.tls_cxt = TLSSessionCtx()
+        self.context.group_x25519_key = self.tls_cxt.group_x25519_key
+        self.context.group_secp_key = self.tls_cxt.group_secp_key
         self.tls_cxt.handshake_data = []
         self.host, self.port = addres[0], addres[1]
 

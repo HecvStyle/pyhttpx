@@ -12,8 +12,8 @@ DEFAULT_PORTS = {HTTP: 8080}
 
 class SocketProxy(socket.socket):
     HTTP = 1
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args):
+        super().__init__(*args)
 
     def set_proxy(self, proxy_type, proxy_addr,proxy_port, username=None, password=None):
 
@@ -67,7 +67,7 @@ class SocketProxy(socket.socket):
 
                 error =f'Tunnel connection failed: status_code = {status_code},Unauthorized'
             else:
-                error = f'Tunnel connection failed: status_code = {status_code}'
+                error = f'Tunnel connection failed: status_msg = {status_line}'
 
             raise ProxyError(error)
 

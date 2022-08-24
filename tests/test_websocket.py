@@ -14,12 +14,7 @@ class WSS:
         self.loop = loop
         #chrome103-ja3
         self.ja3 = '771,19018-4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-18-51-45-43-27-17513,27242-29-23-24,0'
-        self.exts_payload = {
-            51: bytes.fromhex('00297a7a000100001d0020b63f4893bbdd23302f0c66799d94865ea63555b7d891a70aa65fd0aa0280132b'),
-            45: bytes.fromhex('0101'),
-            43: bytes.fromhex('06fafa03040303'),
-            27: bytes.fromhex('020002')
-        }
+
 
     async def connect(self):
         self.sock = await WebSocketClient(url=self.url, headers=self.headers, loop=self.loop,
@@ -30,7 +25,7 @@ class WSS:
 
         while 1:
             if self.sock.open:
-                d = '666'
+                d = '1'
                 print('send',d)
                 await self.sock.send(d,binary=True)
                 await asyncio.sleep(3)

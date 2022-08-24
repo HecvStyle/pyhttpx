@@ -104,6 +104,7 @@ class _ExtNextProtocolNegotiation(_BaseExtension):
     ]
 
 class ExtApplicationLayerProtocolNegotiation(_BaseExtension):
+    #应用层协议扩展,暂不支持http2
     _type = 0x10
     payload = '\x00\x09\x08http/1.1'
     fields_desc = [
@@ -117,20 +118,14 @@ class ExtStatusRequest(_BaseExtension):
         _type,
         payload,
     ]
-class __ExtDelegatedCredentials(_BaseExtension):
+class ExtDelegatedCredentials(_BaseExtension):
     _type = 0x22
     payload = '\x00\x08\x04\x03\x05\x03\x06\x03\x02\x03'
     fields_desc = [
         _type,
         payload,
     ]
-class __ExtSupportVersions(_BaseExtension):
-    _type = 0x2b
-    payload = '\x02\x03\x03'
-    fields_desc = [
-        _type,
-        payload,
-    ]
+
 class ExtSignatureAlgorithms(_BaseExtension):
     _type = 0x0d
     payload = '\x00\x16\x04\x03\x05\x03\x06\x03\x08\x04\x08\x05\x08\x06\x04\x01\x05\x01\x06\x01\x02\x03\x02\x01'
@@ -146,6 +141,7 @@ class ExtRecordSizeLimit(_BaseExtension):
         payload,
     ]
 
+
 #tls1.3
 class ExtKeyShare(_BaseExtension):
     _type = 0x33
@@ -154,6 +150,17 @@ class ExtKeyShare(_BaseExtension):
         _type,
         payload,
     ]
+    def dump(self, host, context):
+
+        group_x25519_key = b'\x00\x1d' + struct.pack('!H',len(context.group_x25519_key)) + context.group_x25519_key
+        group_secp_key = b'\x00\x17' + struct.pack('!H', len(context.group_secp_key)) + context.group_secp_key
+
+        key = group_x25519_key + group_secp_key
+        self.payload = struct.pack('!H', len(key)) + key
+        self.fields_desc[1] = self.payload
+
+        return super().dump(host, context)
+
 
 class ExtPskKeyExchange_modes(_BaseExtension):
     _type = 0x2d
@@ -165,11 +172,12 @@ class ExtPskKeyExchange_modes(_BaseExtension):
 
 class ExtSupportdVersions(_BaseExtension):
     _type = 0x2b
-    payload = '\x02\x03\x03'
+    payload = '\x04\x03\x04\x03\x03'
     fields_desc = [
         _type,
         payload,
     ]
+
 
 class ExtCompressCertificate(_BaseExtension):
     _type = 0x1b
@@ -207,6 +215,7 @@ def make_randext(host, ext_type, payload=None,context=None):
 def dump_extension(host, context):
     #771,4865,0-65281-10-51-43-13-45,29-23,0
     #exts=None, exts_payload=None
+
     exts = context.exts
     exts_payload = context.exts_payload
     ext_data = []

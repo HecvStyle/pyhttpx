@@ -11,13 +11,20 @@ import sys
 import importlib
 import threading
 
+from cryptography.hazmat.primitives.asymmetric import x25519
+from cryptography.hazmat.primitives.asymmetric import ec as cg_ec
+from cryptography.hazmat.primitives import serialization
+
+from pyhttpx.layers.tls.crypto.ecc import CryptoContextFactory
+
+
 from pyhttpx.layers.tls.keyexchange import ServerContext,ClientCpiherSpec,ClientKeyExchange
 from pyhttpx.layers.tls.handshake import HelloClient
 from pyhttpx.layers.tls.suites import CipherSuites
 from pyhttpx.layers.tls.extensions import dump_extension
 
 
-from pyhttpx.layers.tls.tls_context import TLSSessionCtx
+from pyhttpx.layers.tls.tls_context import TLSSessionCtx,TLSSessionCtx13
 
 from pyhttpx.models import Response
 
@@ -29,12 +36,15 @@ from pyhttpx.exception import (
 
 from pyhttpx.layers.tls.socks import SocketProxy
 from pyhttpx.utils import vprint
+
+
 PROTOCOL_TLSv1_2 = b'\x03\x03'
+PROTOCOL_TLSv1_3 = b'\x03\x04'
 def default_context():
     return SSLContext(PROTOCOL_TLSv1_2)
 
-class SSLContext:
 
+class SSLContext:
 
     def __init__(self, protocol):
         self.protocol = protocol
@@ -46,6 +56,13 @@ class SSLContext:
         self.supported_groups = None
         self.supported_groups = None
         self.ec_points = None
+
+        self.tlsversion = b'\x03\x03'
+
+        self.group_x25519_key = b''
+        self.group_secp_key = b''
+
+
 
     def set_ja3(self, ja3=None):
 
@@ -77,6 +94,8 @@ class TLSSocket():
         self.sock = sock
         self.context = ssl or default_context()
 
+        self.tls13 = False
+
     @property
     def isclosed(self):
         return getattr(self, '_closed')
@@ -88,11 +107,13 @@ class TLSSocket():
     def connect(self,addres=None, timeout=None, proxies=None, proxy_auth=None):
         self.servercontext = ServerContext()
         self.tls_cxt = TLSSessionCtx()
+        self.context.group_x25519_key = self.tls_cxt.group_x25519_key
+        self.context.group_secp_key = self.tls_cxt.group_secp_key
         self.tls_cxt.handshake_data = []
         self.host,self.port = addres[0],addres[1]
         self.proxy_auth = proxy_auth
         if not self.sock:          
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -100,7 +121,7 @@ class TLSSocket():
         self.proxies = proxies
 
         if self.proxies:
-            self.sock = SocketProxy()
+            self.sock = SocketProxy(socket.AF_INET, socket.SOCK_STREAM)
             proxy_ip, proxy_port = self.proxies['https'].split(':')
             if self.proxy_auth:
                 username,password = proxy_auth[0], proxy_auth[1]
@@ -112,7 +133,6 @@ class TLSSocket():
         try:
             self.sock.connect((self.host, self.port))
 
-
         except (ConnectionRefusedError,TimeoutError,socket.timeout):
             raise ConnectionTimeout('无法连接 %s:%s' % (self.host, self.port))
 
@@ -120,7 +140,144 @@ class TLSSocket():
             self.local_ip, self.local_port = self.sock.getsockname()[:2]
             self.remote_ip, self.remote_port = self.sock.getpeername()[:2]
             self.isclosed = False
-            return self._tls_do_handshake()
+            return self._tls_do_handshake13()
+
+
+    def _tls_do_handshake13(self):
+
+        ciphersuites, extensions = CipherSuites(self.context).dump(),dump_extension(self.host,self.context)
+        hello = HelloClient(ciphersuites, extensions)
+        self.tls_cxt.client_ctx.random = hello.hanshake.random
+        self.sock.sendall(hello.dump(self.tls_cxt))
+
+        cache =b''
+        self.server_change_cipher_spec = False
+        exchanage = True
+
+        while True:
+            try:
+                recv = self.sock.recv(2 ** 14)
+            except (ConnectionRefusedError,ConnectionResetError,socket.timeout):
+                raise ConnectionTimeout('无法连接 %s:%s' % (self.host, self.port))
+
+            recv = cache + recv
+            cache = b''
+            if recv:
+                while recv:
+                    handshake_type = struct.unpack('!B', recv[:1])[0]
+                    length = struct.unpack('!H', recv[3:5])[0]
+                    flowtext = recv[5:5 + length]
+
+                    if len(flowtext) != length:
+                        cache = recv[:]
+                        break
+
+                    recv = recv[5 + length:]
+                    if handshake_type == 0x16:
+                        if not self.server_change_cipher_spec:
+                            self.tls_cxt.handshake_data.append(flowtext)
+                            self.servercontext.load(flowtext)
+                            self.tls13 = True if self.servercontext.serverstore.ext.get(43) == b'\x03\x04' else False
+                            self.tls_cxt.tls13 = self.tls13
+                        if not self.tls13:
+
+                            if not exchanage and self.server_change_cipher_spec:
+                                #print(threading.current_thread().name,'成功握手,server Encrypted Handshake Message')
+                                # 验证服务器消息,Encrypted Handshake Message,效验密钥
+
+                                server_verify_data = self.tls_cxt.decrypt(flowtext, b'\x16')
+                                self.tls_cxt.verify_server_message(server_verify_data)
+                                return True
+
+                    elif handshake_type == 0x14:
+                        if self.tls13:
+                            #server Change Cipher Spec
+                            self.server_change_cipher_spec = True
+                            server_publickey = self.servercontext.serverstore.ext[51][4:]
+                            self.tls_cxt.negotiated.ciphersuite = int(self.servercontext.serverstore.cipher_suit.hex(), 16)
+                            self.tls_cxt.load_alg()
+                            self.tls_cxt.make_secret(server_publickey)
+
+                        else:
+                            self.server_change_cipher_spec = True
+
+
+                    elif handshake_type == 0x17:
+                        #tls1.3,握手数据是加密的
+                        plaintext = self.tls_cxt.decrypt(flowtext, b'\x17')
+                        self.tls_cxt.handshake_data.append(plaintext[:-1])
+
+                        if plaintext[-1:] == b'\x16':
+                            plaintext = plaintext[:-1]
+                            while plaintext:
+                                extlen = struct.unpack('!I', b'\x00' + plaintext[1:4])[0]
+
+                                if plaintext[0] == 0x14:
+                                    # finished
+                                    changecipherspec = ClientCpiherSpec().dump()
+                                    self.sock.sendall(changecipherspec)
+                                    verify_data = self.tls_cxt.compute_verify_data()
+                                    ciphertext = self.tls_cxt.encrypt(verify_data, b'\x17')
+
+                                    data = b'\x17\x03\x03' + struct.pack('!H', len(ciphertext)) + ciphertext
+                                    self.sock.sendall(data)
+
+                                    self.tls_cxt.derive_application_traffic_secret()
+
+                                    #ticket数据开始重置sequence
+                                    self.tls_cxt.server_ctx.sequence = 0
+                                    self.tls_cxt.client_ctx.sequence = 0
+
+                                    self.tls_cxt.server_ctx.crypto_alg.key = self.tls_cxt.server_application_write_key
+                                    self.tls_cxt.server_ctx.crypto_alg.fixed_iv = self.tls_cxt.server_application_write_iv
+
+                                    self.tls_cxt.client_ctx.crypto_alg.key = self.tls_cxt.client_application_write_key
+                                    self.tls_cxt.client_ctx.crypto_alg.fixed_iv = self.tls_cxt.client_application_write_iv
+
+                                    return
+
+
+                                elif plaintext[0] == 0x0b:
+                                    #证书
+                                    pass
+
+                                elif plaintext[0] == 0x0f:
+                                    #证书验证
+                                    pass
+                                elif plaintext[0] == 0x08:
+                                    #扩展
+                                    pass
+                                plaintext = plaintext[4+extlen:]
+
+                    elif handshake_type == 0x15:
+                        raise TLSDecryptErrorExpetion('handshake failed!, Server Decrypt Error')
+
+                if not self.tls13:
+                    if self.servercontext.done and exchanage:
+
+                        self.tls_cxt.server_ctx.random = self.servercontext.serverstore.random
+                        self.tls_cxt.negotiated.ciphersuite = int(self.servercontext.serverstore.cipher_suit.hex(), 16)
+                        self.tls_cxt.rsa_pulicKey = self.servercontext.certificatecontext.rsa_pulicKey
+                        self.tls_cxt.curve_name = self.servercontext.curve_name
+                        self.tls_cxt.server_ecdhe_pubkey = self.servercontext.serverpubkey
+                        if 23 in self.servercontext.serverstore.ext.keys():
+                            self.tls_cxt.extended_master_secret = True
+
+                        # 加载相关套件
+                        self.tls_cxt.load_alg()
+
+                        keychange = ClientKeyExchange(self.tls_cxt.publickey_bytes).dump(self.tls_cxt)
+                        changecipherspec = ClientCpiherSpec().dump()
+
+                        # 加载客户端verify_data后再导出密钥
+                        self.tls_cxt.load_key()
+
+                        verify_data = self.tls_cxt.get_verify_data()
+                        ciphertext = self.tls_cxt.encrypt(verify_data, b'\x16')
+                        encrypted_message = b'\x16' + b'\x03\x03' + struct.pack('!H', len(ciphertext)) + ciphertext
+                        self.sock.sendall(keychange + changecipherspec + encrypted_message)
+                        exchanage = False
+
 
     def _tls_do_handshake(self):
 
@@ -180,7 +337,7 @@ class TLSSocket():
                     self.tls_cxt.curve_name = self.servercontext.curve_name
                     self.tls_cxt.server_ecdhe_pubkey = self.servercontext.serverpubkey
                     if 23 in self.servercontext.serverstore.ext.keys():
-                        self.tls_cxt.extended_master_secret  =True
+                        self.tls_cxt.extended_master_secret = True
 
                     #加载相关套件
                     self.tls_cxt.load_alg()
@@ -249,7 +406,7 @@ class TLSSocket():
 
     def send(self, plaintext):
 
-        self.response = Response(tls_ctx=self)
+        self.response = Response()
         ciphertext = self.tls_cxt.encrypt(plaintext, b'\x17')
         self.write_buff = b'\x17' + b'\x03\x03' + struct.pack('!H', len(ciphertext)) + ciphertext
         return self.flush()
@@ -260,6 +417,12 @@ class TLSSocket():
         pass
 
     def sendall(self, plaintext):
+
+        #self.tls13 = True
+        if self.tls13:
+            plaintext += b'\x17'
+
+        #time.sleep(2)
         ciphertext = self.tls_cxt.encrypt(plaintext, b'\x17')
         self.write_buff = b'\x17' + b'\x03\x03' + struct.pack('!H', len(ciphertext)) + ciphertext
         self.sock.sendall(self.write_buff)
@@ -287,9 +450,20 @@ class TLSSocket():
                 break
 
             s = s[5 + length:]
+
             if handshake_type == 0x17:
-                p = self.tls_cxt.decrypt(flowtext, b'\x17')
-                self.plaintext_reader += p
+                if self.tls13:
+                    p = self.tls_cxt.decrypt(flowtext, b'\x17')
+                    p, t = p[:-1], p[-1]
+                    if t == 22:
+                        #ticket session
+                        pass
+                    elif t == 23:
+                        self.plaintext_reader += p
+
+                else:
+                    p = self.tls_cxt.decrypt(flowtext, b'\x17')
+                    self.plaintext_reader += p
 
             elif handshake_type == 0x15:
                 self.isclosed = True
@@ -301,7 +475,7 @@ class TLSSocket():
 
 if __name__ == '__main__':
     host = '127.0.0.1'
-    #host = 'httpbin.org'
+    host = 'www.ti.com'
     port = 443
     addres = (host,port)
 
@@ -315,7 +489,6 @@ if __name__ == '__main__':
     response = Response()
     while 1:
         r = ssock.recv(1024)
-        print(r)
         if r is None:
             break
         else:

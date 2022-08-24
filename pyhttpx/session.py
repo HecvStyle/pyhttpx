@@ -217,8 +217,8 @@ class HttpSession(object):
 
         connpool, conn = self.get_conn(req, addr)
         conn.sendall(msg)
-
         response = Response()
+
         while 1:
             r = conn.recv(4096)
             if r is None:
@@ -258,6 +258,13 @@ class HttpSession(object):
     def content(self):
         return self._content
 
+    def close(self):
+        self.tlss.clear()
+
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 

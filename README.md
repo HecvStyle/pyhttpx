@@ -51,7 +51,7 @@ b'GET /get HTTP/1.1\r\nHost: httpbin.org ...
 ## HTTP PROXY
 ```
 >>> proxies = {'https': '127.0.0.1:7890'}
->>>proxy_auth=(username, password)
+>>> proxy_auth = (username, password)
 >>> r = sess.post('https://httpbin.org/get',proxies=proxies,proxy_auth=proxy_auth)
 ```
 
@@ -59,24 +59,18 @@ b'GET /get HTTP/1.1\r\nHost: httpbin.org ...
 
 - 修改ja3,需要下载wireshark,查看完整握手流程，如果服务器返回已实现的密码套件,可随意魔改client hello包
 
-- 已经内置了firefox99的ja3:
 
-  771,49195-49199-52393-52392-49196-49200-49162-49161-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-28,29-23-24-25,0
-
-### 补充说明
-
-- **生产环境中,不建议修改密码套件,如果要打乱,应该把49195-49199放在前面,通常情况下服务器会选择第一个套件**
-
-- 严格意义上的指纹并不是简单的Hash(ja3),而是检测几个关键部分识别的
-
-- 当然了你也可以添加一些随机数,如果你有足够把握的话
-
-### 如何禁用firefox的tls1.3
+### 如何禁用firefox的tls1.3, 强制tls1.2
 
     地址栏输入: about:config,
     搜索tls,将security.tls.version.max的值改为3即可,
     如果firefox访问没问题,表示tls1.2也是可以访问的
 
+### 如何禁用firefox的http2,强制http/1.1
+    
+    地址栏输入: about:config,
+    搜索http2,将network.http.spdy.enabled.http2的值改为false即可,
+    如果firefox访问没问题,表示http/1.1也是可以访问的  
 
 **HttpSession 参数说明**
 
@@ -117,11 +111,13 @@ b'HTTP/1.0 200 OK\r\n'...
     
 # 版本支持
 
-- tls1.2
+- tls1.2/tls1.3
 - http/1.1
 
 # tls密码套件支持
-
+- TLS13_AES_128_GCM_SHA256(0X1301)
+- TLS13_AES_256_GCM_SHA384(0X1302)
+- TLS13_CHACHA20_POLY1305_SHA256(0X1303)
 - ECDHE_WITH_AES_128_GCM
 - ECDHE_WITH_AES_256_GCM
 - ECDHE_WITH_CHACHA20_POLY1305_SHA256
