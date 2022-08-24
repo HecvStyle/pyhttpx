@@ -1,5 +1,7 @@
 import logging
 
+from multidict import CIMultiDict
+
 
 test_chrome_headers = {
 
@@ -8,7 +10,6 @@ test_chrome_headers = {
     'Accept-Language': 'zh,zh-CN;q=0.9,en;q=0.8',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
-    'Host': 'www.365-288.com',
     'Pragma': 'no-cache',
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
@@ -23,17 +24,18 @@ test_chrome_headers = {
 }
 def default_headers():
     h = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0',
-        'Accept': '*/*',
-        'Accept-Language': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-cache',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0',
+        'accept': '*/*',
+        'accept-Language': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'accept-Encoding': 'gzip, deflate, br',
+        'connection': 'keep-alive',
+        'pragma': 'no-cache',
+        'cache-control': 'no-cache',
 
     }
-
-    return h
+    dic = CIMultiDict()
+    dic.update(h)
+    return dic
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +46,8 @@ class Conf:
 def vprint(*args):
     if Conf.debug:
         print(*args)
+
+
 
 
 

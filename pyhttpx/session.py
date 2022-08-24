@@ -9,6 +9,7 @@ from queue import LifoQueue
 import queue
 from threading import RLock
 import threading
+from multidict import CIMultiDict
 
 from urllib.parse import urlencode
 
@@ -169,10 +170,13 @@ class HttpSession(object):
     def prep_request(self, req, send_kw) -> bytes:
         msg = b'%s %s HTTP/1.1\r\n' % (req.method.encode(), req.path.encode())
         msg += b'Host: %s\r\n' % req.host.encode()
-        dh = default_headers()
 
-        dh.update(req.headers)
-        dh.update(send_kw)
+        dh = default_headers()
+        #update存在bug,不不忽略大小写
+        for d in [req.headers, send_kw]:
+            for k, v in d.items():
+                dh[k] = v
+
 
         req_body = ''
         if req.method == 'POST':
@@ -181,7 +185,6 @@ class HttpSession(object):
                     req_body = req.data
 
                 elif isinstance(req.data, dict):
-
                     req_body = urlencode(req.data)
 
             elif req.json:
@@ -216,6 +219,7 @@ class HttpSession(object):
         addr = (req.host, req.port)
 
         connpool, conn = self.get_conn(req, addr)
+
         conn.sendall(msg)
         response = Response()
 
@@ -226,6 +230,7 @@ class HttpSession(object):
                 break
             else:
                 response.flush(r)
+
             if response.read_ended:
                 if response.headers.get('connection') != 'keep-alive':
                     conn.isclosed = True
