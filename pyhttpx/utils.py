@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 
 test_chrome_headers = {
@@ -20,19 +21,50 @@ test_chrome_headers = {
     'sec-ch-ua-platform': '"Windows"',
 
 }
+
+class IgnoreCaseDict(defaultdict):
+    #忽略key大小写
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._keys = {}
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+
+    def __getitem__(self, key):
+        return super().__getitem__(key)
+
+
+    def __setitem__(self, key, value):
+
+        k = self._keys.get(key.lower())
+        if k:
+            self.__delitem__(k)
+
+        super().__setitem__(key,value)
+        self._keys[key.lower()] = key
+
+    def update(self, d ,**kwargs) -> None:
+        for k, v in d.items():
+            self.__setitem__(k ,v)
+
+
 def default_headers():
     h = {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0',
-        'accept': '*/*',
-        'accept-language': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'accept-encoding': 'gzip, deflate, br',
-        'connection': 'keep-alive',
-        'pragma': 'no-cache',
-        'cache-control': 'no-cache',
+        'Host': '127.0.0.1',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0',
+        'Accept': '*/*',
+        'Accept-Language': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache',
 
     }
+    d = IgnoreCaseDict()
+    d.update(h)
+    return d
 
-    return h
 
 log = logging.getLogger(__name__)
 
@@ -45,32 +77,28 @@ def vprint(*args):
         print(*args)
 
 
-import sys
-from array import array
-from collections import abc
-
-from collections.abc import MutableMapping
-
-class M(MutableMapping):
-
-    def __delitem__(self, key):
-        del self[key]
-
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-    def __iter__(self):
-        pass
-
-    def __len__(self):
-        return 1
-
-    def __setitem__(self, key, value):
-        setattr(self, key, value)
-
-
 
 
 if __name__ == '__main__':
-    pass
+    h = {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0',
+        'accept': '*/*',
+        'accept-language': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'accept-encoding': 'gzip, deflate, br',
+        'connection': 'keep-alive',
+        'pragma': 'no-cache',
+        'cache-control': 'no-cache',
+
+    }
+    a = MutDict()
+
+    a.update(h)
+    h1 = {
+        'user-agent': '1',
+        'User-Agent': '1',
+
+    }
+    a.update(h1)
+    for k,v in a.items():
+        print(k,v)
 

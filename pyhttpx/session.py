@@ -21,7 +21,7 @@ from pyhttpx.utils import default_headers,log,Conf
 
 from pyhttpx.models import Response
 from pyhttpx.exception import TooManyRedirects
-
+from pyhttpx.utils import vprint
 
 class CookieJar(object):
     __slots__ = ('name', 'value', 'expires', 'max_age', 'path', 'domain')
@@ -169,14 +169,12 @@ class HttpSession(object):
 
     def prep_request(self, req, send_kw) -> bytes:
         msg = b'%s %s HTTP/1.1\r\n' % (req.method.encode(), req.path.encode())
-        msg += b'Host: %s\r\n' % req.host.encode()
+
 
         dh = default_headers()
-
-        for d in [req.headers, send_kw]:
-            for k, v in d.items():
-                dh[k.lower()] = v
-
+        dh['Host'] = req.host
+        dh.update(req.headers)
+        dh.update(send_kw)
 
         req_body = ''
         if req.method == 'POST':
@@ -196,6 +194,7 @@ class HttpSession(object):
 
         msg += b'\r\n'
         msg += req_body.encode()
+        vprint(msg.decode())
         return msg
 
     def get_conn(self,req, addr):
@@ -216,10 +215,9 @@ class HttpSession(object):
 
         return connpool, conn
     def send(self, req, msg, update_cookies):
+
         addr = (req.host, req.port)
-
         connpool, conn = self.get_conn(req, addr)
-
         conn.sendall(msg)
         response = Response()
 
@@ -241,8 +239,8 @@ class HttpSession(object):
         set_cookie = response.headers.get('set-cookie')
         if set_cookie and update_cookies:
             self.handle_cookie(req, set_cookie)
-        response.cookies = response.headers.get('set-cookie', {})
 
+        response.cookies = response.headers.get('set-cookie', {})
         self._content = response.content
         if not conn.isclosed:
             connpool._put_conn(conn)
