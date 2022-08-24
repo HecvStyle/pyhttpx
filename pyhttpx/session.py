@@ -9,7 +9,7 @@ from queue import LifoQueue
 import queue
 from threading import RLock
 import threading
-from multidict import CIMultiDict
+
 
 from urllib.parse import urlencode
 
@@ -172,10 +172,10 @@ class HttpSession(object):
         msg += b'Host: %s\r\n' % req.host.encode()
 
         dh = default_headers()
-        #update存在bug,不不忽略大小写
+
         for d in [req.headers, send_kw]:
             for k, v in d.items():
-                dh[k] = v
+                dh[k.lower()] = v
 
 
         req_body = ''

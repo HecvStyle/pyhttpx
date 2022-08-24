@@ -1,7 +1,5 @@
 import logging
 
-from multidict import CIMultiDict
-
 
 test_chrome_headers = {
 
@@ -26,16 +24,15 @@ def default_headers():
     h = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0',
         'accept': '*/*',
-        'accept-Language': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'accept-Encoding': 'gzip, deflate, br',
+        'accept-language': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'accept-encoding': 'gzip, deflate, br',
         'connection': 'keep-alive',
         'pragma': 'no-cache',
         'cache-control': 'no-cache',
 
     }
-    dic = CIMultiDict()
-    dic.update(h)
-    return dic
+
+    return h
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +45,32 @@ def vprint(*args):
         print(*args)
 
 
+import sys
+from array import array
+from collections import abc
+
+from collections.abc import MutableMapping
+
+class M(MutableMapping):
+
+    def __delitem__(self, key):
+        del self[key]
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __iter__(self):
+        pass
+
+    def __len__(self):
+        return 1
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
 
 
+
+
+if __name__ == '__main__':
+    pass
 
