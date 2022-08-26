@@ -11,22 +11,12 @@ import sys
 import importlib
 import threading
 
-from cryptography.hazmat.primitives.asymmetric import x25519
-from cryptography.hazmat.primitives.asymmetric import ec as cg_ec
-from cryptography.hazmat.primitives import serialization
-
-from pyhttpx.layers.tls.crypto.ecc import CryptoContextFactory
-
 
 from pyhttpx.layers.tls.keyexchange import ServerContext,ClientCpiherSpec,ClientKeyExchange
 from pyhttpx.layers.tls.handshake import HelloClient
 from pyhttpx.layers.tls.suites import CipherSuites
 from pyhttpx.layers.tls.extensions import dump_extension
-
-
-from pyhttpx.layers.tls.tls_context import TLSSessionCtx,TLSSessionCtx13
-
-from pyhttpx.models import Response
+from pyhttpx.layers.tls.tls_context import TLSSessionCtx
 
 from pyhttpx.exception import (
     TLSDecryptErrorExpetion,
@@ -36,7 +26,6 @@ from pyhttpx.exception import (
 
 from pyhttpx.layers.tls.socks import SocketProxy
 from pyhttpx.utils import vprint
-
 
 PROTOCOL_TLSv1_2 = b'\x03\x03'
 PROTOCOL_TLSv1_3 = b'\x03\x04'
@@ -75,7 +64,6 @@ class SSLContext:
     def set_ext_payload(self, data):
         self.exts_payload = data
     def wrap_socket(self, sock=None, server_hostname=None):
-
         return TLSSocket(sock=sock,server_hostname=server_hostname, ssl=self)
 
     def load_cert_chain(self, certfile: str, ketfile: str):
@@ -125,6 +113,7 @@ class TLSSocket():
 
             self.sock.set_proxy(SocketProxy.HTTP, proxy_ip, proxy_port,username, password )
 
+
         try:
             self.sock.connect((self.host, self.port))
 
@@ -145,20 +134,13 @@ class TLSSocket():
         self.tls_cxt.client_ctx.random = hello.hanshake.random
         self.sock.sendall(hello.dump(self.tls_cxt))
 
-        cache =b''
         self.server_change_cipher_spec = False
         exchanage = True
 
         while True:
-            try:
-
-                recv = self.sock.recv(5)
-                if not recv:
-                    raise ConnectionClosed('handshake failed, server closed connection')
-            except (ConnectionRefusedError,ConnectionResetError,socket.timeout):
-                raise ConnectionTimeout('unable to connect %s:%s' % (self.host, self.port))
-
-
+            recv = self.mutable_recv(5)
+            if not recv:
+                raise ConnectionClosed('handshake failed, server closed connection')
 
             handshake_type = struct.unpack('!B', recv[:1])[0]
             length = struct.unpack('!H', recv[3:5])[0]
@@ -166,7 +148,7 @@ class TLSSocket():
             recv_len = length
             while len(flowtext) < length:
 
-                s = self.sock.recv(recv_len)
+                s = self.mutable_recv(recv_len)
                 flowtext += s
                 recv_len = length - len(flowtext)
 
@@ -301,9 +283,19 @@ class TLSSocket():
         self.sock.sendall(self.write_buff)
         self.plaintext_reader = b''
 
-    def recv(self, size=1024):
 
-        s = self.sock.recv(5)
+    def mutable_recv(self, size=1024):
+        try:
+            self.sock.settimeout(self.timeout)
+            s = self.sock.recv(size)
+            return s
+
+        except socket.timeout:
+            raise ReadTimeout('unable to connect %s:%s' % (self.host, self.port))
+
+    def recv(self):
+
+        s = self.mutable_recv(5)
         if not s:
             return None
 
@@ -314,7 +306,7 @@ class TLSSocket():
         recv_len = length
         while len(flowtext) < length:
 
-            s = self.sock.recv(recv_len)
+            s = self.mutable_recv(recv_len)
             flowtext += s
             recv_len = length - len(flowtext)
 
