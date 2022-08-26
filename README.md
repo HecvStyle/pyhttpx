@@ -64,7 +64,7 @@ b'GET /get HTTP/1.1\r\nHost: httpbin.org ...
 ## 查看tls指纹
 - https://tls.peet.ws/api/all
 - 下载wireshark,查看完整握手流程，如果服务器返回已实现的密码套件,可随意魔改client hello包
-
+- ja3和User-Agent建议使用同一个浏览器的信息
 
 ### 如何禁用firefox的tls1.3, 强制tls1.2
 
