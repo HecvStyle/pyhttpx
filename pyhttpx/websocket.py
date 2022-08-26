@@ -206,7 +206,7 @@ class WebSocketClient:
 
         if opcode == 0x00:
             self.reader_buffer += msg
-        if opcode == 0x01:
+        elif opcode == 0x01:
             self.reader_buffer += msg
         elif opcode == 0x02:
             self.reader_buffer += msg
@@ -217,7 +217,8 @@ class WebSocketClient:
 
         elif opcode == 0x9:
             # 收到ping,发送pong
-            await self.send('', binary=False, opc=0xA)
+
+            await self.send(msg, binary=False, opc=0xA)
 
         elif opcode == 0xA:
             # pong
@@ -253,7 +254,7 @@ class WebSocketClient:
         while 1:
             s = os.urandom(4).decode('latin1')
             await self.send(s,binary=True, opc=0x09)
-            await asyncio.sleep(2)
+            await asyncio.sleep(20)
 
 
 

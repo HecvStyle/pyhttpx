@@ -104,7 +104,11 @@ class Response(object):
         if not self.headers and b'\r\n\r\n' in self.plaintext_buffer:
             header_buffer,self.plaintext_buffer = self.plaintext_buffer.split(b'\r\n\r\n', 1)
             self.headers = self.handle_headers(header_buffer)
-            self.content_length = int(self.headers.get('content-length', 0))
+
+            if self.headers.get('content-length'):
+                self.content_length = int(self.headers.get('content-length', 0))
+            else:
+                self.content_length = None
 
 
         if self.headers:
@@ -116,10 +120,13 @@ class Response(object):
 
             else:
 
-                if self.content_length <= len(self.plaintext_buffer):
-                    self.body = self.plaintext_buffer[:self.content_length]
-                    self.read_ended = True
-                    return
+                if self.content_length:
+                    if self.content_length <= len(self.plaintext_buffer):
+                        self.body = self.plaintext_buffer[:self.content_length]
+                        self.read_ended = True
+                        return
+                else:
+                    self.body = self.plaintext_buffer[:]
 
     @property
     def content(self):

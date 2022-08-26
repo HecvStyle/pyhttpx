@@ -222,18 +222,22 @@ class HttpSession(object):
         response = Response()
 
         while 1:
-            r = conn.recv(4096)
+            r = conn.recv()
             if r is None:
                 conn.isclosed = True
                 break
             else:
                 response.flush(r)
 
+            connection = response.headers.get('connection','')
             if response.read_ended:
-                if response.headers.get('connection') != 'keep-alive':
+                if connection != 'keep-alive':
                     conn.isclosed = True
                 break
 
+            #头部没有长度字段
+            if 'timeout' in connection:
+                pass
         response.request = req
         response.request.raw = msg
         set_cookie = response.headers.get('set-cookie')

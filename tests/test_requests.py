@@ -10,7 +10,6 @@ def main():
     url = 'https://tls.peet.ws/api/all'
     #url = 'https://127.0.0.1'
 
-
     #firefox99,tls1.2,http/1.1
     ja3 = '771,49195-49199-52393-52392-49196-49200-49162-49161-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-28,29-23-24-25,0'
 
@@ -20,10 +19,11 @@ def main():
     exts_payload = {}
     sess = pyhttpx.HttpSession(ja3=ja3)
     p = {'https': '127.0.0.1:7890'}
-
-    r = sess.get(url)
+    p = None
+    r = sess.get(url,proxies=p)
     print(r.status_code)
-    print(r.text)
+    print(r.text[:])
+
 
 
 
