@@ -7,6 +7,7 @@ import random
 import requests
 def main():
 
+    #ja3和User-Agent建议使用同一个浏览器的信息
     url = 'https://tls.peet.ws/api/all'
     url = 'https://127.0.0.1'
 
