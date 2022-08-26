@@ -55,6 +55,12 @@ b'GET /get HTTP/1.1\r\nHost: httpbin.org ...
 >>> r = sess.post('https://httpbin.org/get',proxies=proxies,proxy_auth=proxy_auth)
 ```
 
+## allow_redirects
+
+  ```
+>>> r = sess.post('https://httpbin.org/get',allow_redirects=True)
+```  
+
 ## 查看tls指纹
 - https://tls.peet.ws/api/all
 - 下载wireshark,查看完整握手流程，如果服务器返回已实现的密码套件,可随意魔改client hello包

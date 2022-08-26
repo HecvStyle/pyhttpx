@@ -156,10 +156,14 @@ class HttpSession(object):
         msg = self.prep_request(req, send_kw)
 
         resp = self.send(req, msg, update_cookies)
+        return resp
 
-        if resp.status_code == 302 and req.allow_redirects:
+    def handle_redirect(self, resp):
+
+        if resp.status_code == 302 and resp.request.allow_redirects:
+            location = resp.headers['location']
             for i in range(Conf.max_allow_redirects):
-                resp = self.send(req, msg, update_cookies)
+                resp = self.request('GET', location)
                 if resp.status_code != 302:
                     break
             else:
@@ -256,7 +260,9 @@ class HttpSession(object):
         _cookies = self.cookie_manger.get(self.active_addr)
         return _cookies
     def get(self, url, **kwargs):
-        return self.request('GET', url, **kwargs)
+        resp = self.request('GET', url, **kwargs)
+        resp = self.handle_redirect(resp)
+        return resp
 
     def post(self,url, **kwargs):
         return self.request('POST', url, **kwargs)

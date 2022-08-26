@@ -29,7 +29,7 @@ class PyTest(TestCommand):
 packages = find_packages()
 setup(
     name = "pyhttpx",
-    version = "1.3.14",
+    version = "1.3.15",
     keywords = ["pip", "pyhttpx"],
     description = "HTTP library.",
     long_description = "3301's utils.",
