@@ -142,9 +142,10 @@ b'HTTP/1.0 200 OK\r\n'...
  
 ### end
 
-有什么bug, 或者好设计模式, 欢迎大家issues</br>
+有什么bug, 或者好设计模式, 欢迎大家issues, VX: ZanCoder</br>
 
 如果对你有帮助,可以请我喝杯咖啡哟
+
 
 
  ![Image_QingFlow](https://file.qingflow.com/documents/form/attach/35efbb5c-b704-4ac6-9074-8adc2f0ef9df.png)
