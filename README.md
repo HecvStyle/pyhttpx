@@ -95,7 +95,7 @@ exts_payload: 需要填充的扩展数据,不包括数据长度
 
 # 支持ssl上下文
 
-如果数据为None,表示收到fin,服务器断开连接
+如果数据是空字符,表示收到fin,服务器断开连接
 
 ```
 >>>from pyhttpx.layers.tls.pyssl import SSLContext,PROTOCOL_TLSv1_2
