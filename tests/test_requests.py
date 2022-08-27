@@ -24,7 +24,7 @@ def main():
     sess = pyhttpx.HttpSession(ja3=ja3)
     p = {'https': '127.0.0.1:7890'}
     p = None
-    r = sess.get(url,proxies=p, timeout=1)
+    r = sess.get(url,proxies=p, timeout=7)
     print(r.status_code)
     print(r.text[:])
 

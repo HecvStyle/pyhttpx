@@ -105,9 +105,9 @@ exts_payload: 需要填充的扩展数据,不包括数据长度
 >>>sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
 >>>ssock = context.wrap_socket(sock, server_hostname=addres[0])
 >>>ssock.connect(addres)
->>>m = 'GET / HTTP/1.1\r\nHOST: %s\r\n\r\n' % addres[0]
+>>>m = 'GET / HTTP/1.1\r\nHost: %s\r\n\r\n' % addres[0]
 >>>ssock.sendall(m.encode())
->>>r = ssock.recv(1024)
+>>>r = ssock.recv()
 b'HTTP/1.0 200 OK\r\n'...
 ```
 

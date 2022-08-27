@@ -227,7 +227,7 @@ class HttpSession(object):
 
         while 1:
             r = conn.recv()
-            if r is None:
+            if not r:
                 conn.isclosed = True
                 break
             else:

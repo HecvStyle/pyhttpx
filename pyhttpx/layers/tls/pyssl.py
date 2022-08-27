@@ -118,7 +118,7 @@ class TLSSocket():
             self.sock.connect((self.host, self.port))
 
         except (ConnectionRefusedError,TimeoutError,socket.timeout):
-            raise ConnectionTimeout('无法连接 %s:%s' % (self.host, self.port))
+            raise ConnectionTimeout('unable to connect %s:%s' % (self.host, self.port))
 
         else:
             self.local_ip, self.local_port = self.sock.getsockname()[:2]
@@ -237,7 +237,7 @@ class TLSSocket():
 
 
             elif handshake_type == 0x15:
-                raise TLSDecryptErrorExpetion('handshake failed!, Server Decrypt Error')
+                raise TLSDecryptErrorExpetion('handshake failed!, server encrypt error')
 
             if not self.tls13:
                 if self.servercontext.done and exchanage:
@@ -291,10 +291,22 @@ class TLSSocket():
             return s
 
         except socket.timeout:
-            raise ReadTimeout('unable to connect %s:%s' % (self.host, self.port))
+            raise ReadTimeout('read timeout %s:%s' % (self.host, self.port))
 
     def recv(self):
 
+        while True:
+            s = self.process()
+            if s is None:
+                return b''
+            elif s == b'':
+                #处理ticket数据会返回''
+                pass
+            elif len(s) > 0:
+                return s
+
+    def process(self):
+        #只返回应用层数据
         s = self.mutable_recv(5)
         if not s:
             return None
@@ -305,7 +317,6 @@ class TLSSocket():
 
         recv_len = length
         while len(flowtext) < length:
-
             s = self.mutable_recv(recv_len)
             flowtext += s
             recv_len = length - len(flowtext)
@@ -334,4 +345,3 @@ class TLSSocket():
         b = self.plaintext_reader
         self.plaintext_reader = b''
         return b
-
