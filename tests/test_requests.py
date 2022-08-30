@@ -12,7 +12,7 @@ import requests
 def main():
 
     url = 'https://tls.peet.ws/api/all'
-    url = 'https://127.0.0.1'
+    #url = 'https://127.0.0.1'
 
     #ja3和User-Agent建议使用同一个浏览器的信息
     #firefox99,tls1.2,http/1.1
@@ -24,15 +24,15 @@ def main():
     sess = pyhttpx.HttpSession(ja3=ja3)
     p = {'https': '127.0.0.1:7890'}
     p = None
-    r = sess.get(url,proxies=p, timeout=7)
+    r = sess.get(url,proxies=p, timeout=1)
     print(r.status_code)
-    print(r.text[:])
+    print(r.text[:100])
 
 
 def test_concurrent():
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         #results = executor.map(main,range(3))
-        task = [executor.submit(main) for i in range(2)]
+        task = [executor.submit(main) for i in range(3)]
         for future in concurrent.futures.as_completed(task):
             try:
                 data = future.result()

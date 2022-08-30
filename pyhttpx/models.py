@@ -4,12 +4,41 @@ from collections import OrderedDict,defaultdict
 
 import brotli
 
-from urllib.parse import urlparse,urlencode,quote,unquote
+from urllib.parse import urlparse,urlencode,quote,unquote,urlsplit
 
 
 def encodeURI(url):
     url = unquote(url)
     return quote(url,safe='!@#$&*()=:/;?+\'"')
+
+def path_url(url):
+    urls = []
+    p = urlsplit(url)
+    path = p.path
+    if not path:
+        path = '/'
+
+    urls.append(path)
+    query = p.query
+    if query:
+        urls.append('?')
+        urls.append(query)
+    return ''.join(urls)
+
+
+def encode_params(url, params=None):
+    #return path
+    p = {}
+    params = params or {}
+    path = path_url(url)
+    p.update(params)
+    result = list(p.items())
+    concat_chr = '&' if '?' in path else '?'
+    if result:
+        path = path + concat_chr + urlencode(result, doseq=True)
+
+    return encodeURI(path)
+
 
 class Request(object):
     def __init__(self,
@@ -42,24 +71,7 @@ class Request(object):
             self.host,self.port = self.host.split(':',1)
 
         self.scheme = self.parse_url.scheme
-        self.pre_path = self.parse_url.path or '/'
-
-        self.prep_params = self.parse_url.query
-        if self.prep_params:
-            for i in self.prep_params.split('&'):
-                k, v = i.split('=', 1)
-                self.params[k] = v
-
-        #url不编码字符
-
-        self.path = self.pre_path
-        if self.params:
-
-            path = self.pre_path + '?' + '&'.join(['{}={}'.format(k,v) for k,v in self.params.items()])
-            self.path = encodeURI(path)
-
-
-
+        self.path = encode_params(self.url, self.params)
 
     def __repr__(self):
         template = '<Request {method}>'
