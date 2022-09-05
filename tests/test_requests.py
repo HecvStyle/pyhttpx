@@ -12,7 +12,8 @@ import requests
 def main():
 
     url = 'https://tls.peet.ws/api/all'
-    #url = 'https://127.0.0.1'
+    url = 'https://127.0.0.1'
+    url = 'https://httpbin.org/get'
 
     #ja3和User-Agent建议使用同一个浏览器的信息
     #firefox99,tls1.2,http/1.1
@@ -24,9 +25,10 @@ def main():
     sess = pyhttpx.HttpSession(ja3=ja3)
     p = {'https': '127.0.0.1:7890'}
     p = None
-    r = sess.get(url,proxies=p, timeout=1)
+    r = sess.get(url,proxies=p)
     print(r.status_code)
-    print(r.text[:100])
+    print(r.text)
+
 
 
 def test_concurrent():

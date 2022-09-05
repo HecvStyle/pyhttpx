@@ -87,13 +87,13 @@ class TLSSocket():
     def isclosed(self, value):
         setattr(self, '_closed', value)
 
-    def connect(self,addres=None, timeout=None, proxies=None, proxy_auth=None):
+    def connect(self,addres, timeout=None, proxies=None, proxy_auth=None):
         self.servercontext = ServerContext()
         self.tls_cxt = TLSSessionCtx()
         self.context.group_x25519_key = self.tls_cxt.group_x25519_key
         self.context.group_secp_key = self.tls_cxt.group_secp_key
         self.tls_cxt.handshake_data = []
-        self.host,self.port = addres[0],addres[1]
+        self.host,self.port = addres[0],int(addres[1])
         self.proxy_auth = proxy_auth
         if not self.sock:          
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

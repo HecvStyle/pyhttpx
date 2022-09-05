@@ -224,7 +224,6 @@ class HttpSession(object):
         connpool, conn = self.get_conn(req, addr)
         conn.sendall(msg)
         response = Response()
-
         while 1:
             r = conn.recv()
             if not r:

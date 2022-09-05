@@ -1,15 +1,14 @@
 import gzip
 import json
 from collections import OrderedDict,defaultdict
-
 import brotli
-
 from urllib.parse import urlparse,urlencode,quote,unquote,urlsplit
 
 
 def encodeURI(url):
     url = unquote(url)
-    return quote(url,safe='!@#$&*()=:/;?+\'"')
+    safe = '!@#$&*()=:/;?+\'"'
+    return quote(url,safe='')
 
 def path_url(url):
     urls = []
@@ -23,21 +22,32 @@ def path_url(url):
     if query:
         urls.append('?')
         urls.append(query)
-    return ''.join(urls)
+
+
+    params = {}
+    if query:
+        for q in query.split('&'):
+            if q:
+                k,v = q.split('=',1)
+                params[k] = v
+            else:
+                params[''] = ''
+    return path, params
 
 
 def encode_params(url, params=None):
     #return path
-    p = {}
-    params = params or {}
-    path = path_url(url)
-    p.update(params)
-    result = list(p.items())
-    concat_chr = '&' if '?' in path else '?'
-    if result:
-        path = path + concat_chr + urlencode(result, doseq=True)
 
-    return encodeURI(path)
+    params = params or {}
+    path, p = path_url(url)
+    params.update(params)
+    params.update(p)
+    result = list(params.items())
+    if result:
+        params = urlencode(result, doseq=True)
+        path = f'{path}?{params}'
+
+    return path
 
 
 class Request(object):
@@ -72,6 +82,7 @@ class Request(object):
 
         self.scheme = self.parse_url.scheme
         self.path = encode_params(self.url, self.params)
+
 
     def __repr__(self):
         template = '<Request {method}>'
@@ -122,6 +133,8 @@ class Response(object):
             else:
                 self.content_length = None
 
+            if self.content_length == 0:
+                self.read_ended = True
 
         if self.headers:
             if self.transfer_encoding == self.headers.get('transfer-encoding'):

@@ -53,13 +53,13 @@ class TLSSocket:
     def isclosed(self, value):
         setattr(self, '_closed', value)
 
-    async def connect(self, addres=None):
+    async def connect(self, addres):
         self.servercontext = ServerContext()
         self.tls_cxt = TLSSessionCtx()
         self.context.group_x25519_key = self.tls_cxt.group_x25519_key
         self.context.group_secp_key = self.tls_cxt.group_secp_key
         self.tls_cxt.handshake_data = []
-        self.host, self.port = addres[0], addres[1]
+        self.host, self.port = addres[0], int(addres[1])
 
         self._timeout = self._timeout or 0
 

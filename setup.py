@@ -29,10 +29,10 @@ class PyTest(TestCommand):
 packages = find_packages()
 setup(
     name = "pyhttpx",
-    version = "1.3.19",
+    version = "1.3.20",
     keywords = ["pip", "pyhttpx"],
     description = "HTTP library.",
-    long_description = "3301's utils.",
+    long_description = "HTTP library.",
     license = "MIT Licence",
 
     url = "https://github.com/zero3301/pyhttpx",
@@ -55,4 +55,4 @@ setup(
 
 #打包
 #python setup.py sdist
-#twine upload dist/pyhttpx-1.3.13.tar.gz
+#twine upload dist/pyhttpx-1.3.20.tar.gz
