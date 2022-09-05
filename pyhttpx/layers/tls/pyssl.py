@@ -146,6 +146,7 @@ class TLSSocket():
             length = struct.unpack('!H', recv[3:5])[0]
             flowtext = b''
             recv_len = length
+
             while len(flowtext) < length:
 
                 s = self.mutable_recv(recv_len)
@@ -158,6 +159,14 @@ class TLSSocket():
                     self.servercontext.load(flowtext)
                     self.tls13 = True if self.servercontext.serverstore.ext.get(43) == b'\x03\x04' else False
                     self.tls_cxt.tls13 = self.tls13
+
+                    if self.tls13:
+                        self.server_change_cipher_spec = True
+                        server_publickey = self.servercontext.serverstore.ext[51][4:]
+                        self.tls_cxt.negotiated.ciphersuite = int(self.servercontext.serverstore.cipher_suit.hex(), 16)
+                        self.tls_cxt.load_alg()
+                        self.tls_cxt.make_secret(server_publickey)
+
                 if not self.tls13:
 
                     if not exchanage and self.server_change_cipher_spec:
@@ -171,12 +180,14 @@ class TLSSocket():
 
             elif handshake_type == 0x14:
                 if self.tls13:
+                    pass
                     #server Change Cipher Spec
-                    self.server_change_cipher_spec = True
-                    server_publickey = self.servercontext.serverstore.ext[51][4:]
-                    self.tls_cxt.negotiated.ciphersuite = int(self.servercontext.serverstore.cipher_suit.hex(), 16)
-                    self.tls_cxt.load_alg()
-                    self.tls_cxt.make_secret(server_publickey)
+                    # self.server_change_cipher_spec = True
+                    # server_publickey = self.servercontext.serverstore.ext[51][4:]
+                    # self.tls_cxt.negotiated.ciphersuite = int(self.servercontext.serverstore.cipher_suit.hex(), 16)
+                    # self.tls_cxt.load_alg()
+                    # self.tls_cxt.make_secret(server_publickey)
+
 
                 else:
                     self.server_change_cipher_spec = True
@@ -273,10 +284,8 @@ class TLSSocket():
         pass
 
     def sendall(self, plaintext):
-
         if self.tls13:
             plaintext += b'\x17'
-
 
         ciphertext = self.tls_cxt.encrypt(plaintext, b'\x17')
         self.write_buff = b'\x17' + b'\x03\x03' + struct.pack('!H', len(ciphertext)) + ciphertext
@@ -307,13 +316,25 @@ class TLSSocket():
 
     def process(self):
         #只返回应用层数据
-        s = self.mutable_recv(5)
-        if not s:
+
+        length = 5
+        recv_len = length
+
+        head_flowtext = b''
+        while len(head_flowtext) < length:
+            s = self.mutable_recv(recv_len)
+            if not s:
+                return None
+
+            head_flowtext += s
+            recv_len = length - len(head_flowtext)
+
+        if len(head_flowtext) < 5:
             return None
 
-        handshake_type = struct.unpack('!B', s[:1])[0]
-        length = struct.unpack('!H', s[3:5])[0]
-        flowtext = s[5:5 + length]
+        handshake_type = struct.unpack('!B', head_flowtext[:1])[0]
+        length = struct.unpack('!H', head_flowtext[3:5])[0]
+        flowtext = head_flowtext[5:5 + length]
 
         recv_len = length
         while len(flowtext) < length:
@@ -336,6 +357,7 @@ class TLSSocket():
                 self.plaintext_reader += p
 
         elif handshake_type == 0x15:
+            #\x01\x00
             # Level: Warning (1)
             # Description: Close Notify (0)
             self.isclosed = True
