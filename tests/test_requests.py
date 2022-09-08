@@ -30,7 +30,8 @@ test_chrome_headers = {
 def main():
 
     url = 'https://tls.peet.ws/api/all'
-    #url = 'https://127.0.0.1'
+
+    url = 'https://127.0.0.1'
     url = 'https://httpbin.org/get'
 
 
@@ -45,18 +46,18 @@ def main():
     p = {'https': '127.0.0.1:7890'}
     p = None
 
-    r = sess.get(url,headers=test_chrome_headers,proxies=p)
-    print(r.status_code)
+    r = sess.get(url)
     text  = r.text
-    print(len(text), text[:100])
 
-
+    print(r.status_code)
+    print(len(text))
+    print(text)
 
 
 def test_concurrent():
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         #results = executor.map(main,range(3))
-        task = [executor.submit(main) for i in range(3)]
+        task = [executor.submit(main) for i in range(10)]
         for future in concurrent.futures.as_completed(task):
             try:
                 data = future.result()
@@ -66,8 +67,11 @@ def test_concurrent():
     executor.shutdown(wait=True)
 
 if __name__ == '__main__':
-    
+
     main()
+    #test_concurrent()
+
+
 
 
 

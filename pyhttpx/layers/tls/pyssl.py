@@ -138,18 +138,29 @@ class TLSSocket():
         exchanage = True
 
         while True:
-            recv = self.mutable_recv(5)
-            if not recv:
-                raise ConnectionClosed('handshake failed, server closed connection')
+            length = 5
+            recv_len = length
 
-            handshake_type = struct.unpack('!B', recv[:1])[0]
-            length = struct.unpack('!H', recv[3:5])[0]
+            head_flowtext = b''
+            while len(head_flowtext) < length:
+                s = self.mutable_recv(recv_len)
+                if not s:
+                    raise ConnectionClosed('handshake failed, server closed connection')
+
+                head_flowtext += s
+                recv_len = length - len(head_flowtext)
+
+
+            handshake_type = struct.unpack('!B', head_flowtext[:1])[0]
+            length = struct.unpack('!H', head_flowtext[3:5])[0]
             flowtext = b''
             recv_len = length
 
             while len(flowtext) < length:
 
                 s = self.mutable_recv(recv_len)
+                if not s:
+                    raise ConnectionClosed('handshake failed, server closed connection')
                 flowtext += s
                 recv_len = length - len(flowtext)
 
@@ -329,9 +340,6 @@ class TLSSocket():
             head_flowtext += s
             recv_len = length - len(head_flowtext)
 
-        if len(head_flowtext) < 5:
-            return None
-
         handshake_type = struct.unpack('!B', head_flowtext[:1])[0]
         length = struct.unpack('!H', head_flowtext[3:5])[0]
         flowtext = head_flowtext[5:5 + length]
@@ -339,6 +347,9 @@ class TLSSocket():
         recv_len = length
         while len(flowtext) < length:
             s = self.mutable_recv(recv_len)
+            if not s:
+                return None
+
             flowtext += s
             recv_len = length - len(flowtext)
 
@@ -362,7 +373,7 @@ class TLSSocket():
             # Description: Close Notify (0)
             self.isclosed = True
             p = self.tls_cxt.decrypt(flowtext, b'\x15')
-            return None
+            raise ConnectionClosed('server closed connect')
 
         b = self.plaintext_reader
         self.plaintext_reader = b''

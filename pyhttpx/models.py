@@ -82,6 +82,8 @@ class Request(object):
 
         self.scheme = self.parse_url.scheme
         self.path = encode_params(self.url, self.params)
+        if self.scheme != 'https':
+            raise TypeError('only supports https')
 
 
     def __repr__(self):
@@ -111,7 +113,6 @@ class Response(object):
 
         protocol_raw,headers_raw = buffer[0],buffer[1:]
         self.status_code = int(protocol_raw.split(' ')[1])
-
         for head in headers_raw:
             k,v = head.split(': ', 1)
             k,v = k.lower().strip(),v.strip()
